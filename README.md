@@ -1,1 +1,0 @@
-# Aizawa-Attractor-Visualization
