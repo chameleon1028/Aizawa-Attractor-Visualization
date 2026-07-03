@@ -3,827 +3,462 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aizawa Attractor – Interactive 3D Visualization</title>
+    <title>Aizawa Attractor · Clean & Calm</title>
     <script src="https://cdn.plot.ly/plotly-2.32.0.min.js">
     </script>
     <style>
         :root {
-            --bg: #0d1117;
-            --surface: #161b22;
-            --border: #30363d;
-            --text: #c9d1d9;
-            --text-secondary: #8b949e;
-            --accent: #58a6ff;
-            --accent-hover: #79c0ff;
-            --danger: #f85149;
-            --danger-hover: #ff6b63;
-            --slider-track: #21262d;
-            --slider-fill: #58a6ff;
-            --radius: 10px;
-            --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+            --bg: #0a0c10;
+            --surface: rgba(20, 24, 32, 0.85);
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #e0e0e0;
+            --radius: 14px;
+            --shadow: 0 20px 50px rgba(0,0,0,0.7);
         }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
-            background: var(--bg);
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            background: radial-gradient(ellipse at 30% 40%, #131a2b, #04060a);
             color: var(--text);
             min-height: 100vh;
             display: flex;
-            flex-direction: column;
             align-items: center;
-            padding: 16px;
-            line-height: 1.6;
+            justify-content: center;
+            padding: 12px;
         }
-
         .container {
             width: 100%;
             max-width: 1400px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 18px;
         }
-
-        /* Header */
         .header {
             text-align: center;
             padding: 8px 0;
         }
         .header h1 {
-            font-size: clamp(1.6rem, 3vw, 2.2rem);
+            font-size: clamp(1.8rem, 3vw, 2.4rem);
             font-weight: 700;
-            letter-spacing: -0.02em;
-            background: linear-gradient(135deg, #58a6ff, #a371f7, #f778ba);
+            background: linear-gradient(135deg, #4da6ff, #7ad0ff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 4px;
+            letter-spacing: -0.02em;
         }
-        .header .subtitle {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            font-weight: 400;
+        .equation-card {
+            background: rgba(15, 20, 30, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(77, 166, 255, 0.35);
+            border-radius: var(--radius);
+            padding: 20px 28px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(77, 166, 255, 0.15);
+            text-align: center;
         }
-
-        /* Main layout */
+        .equation-card .eq {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            line-height: 1.9;
+            color: #d0d9e8;
+            background: #101624;
+            padding: 16px 24px;
+            border-radius: 10px;
+            border-left: 4px solid #4da6ff;
+            display: inline-block;
+            text-align: left;
+        }
         .main-content {
             display: flex;
-            gap: 16px;
             flex-wrap: wrap;
-        }
-
-        /* Plot container */
-        .plot-wrapper {
-            flex: 1 1 65%;
-            min-width: 380px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            position: relative;
-        }
-        #plot3d {
-            width: 100%;
-            height: 600px;
-            min-height: 500px;
-        }
-        .computing-overlay {
-            display: none;
-            position: absolute;
-            inset: 0;
-            background: rgba(13, 17, 23, 0.75);
-            z-index: 10;
+            gap: 18px;
+            align-items: stretch;
             justify-content: center;
-            align-items: center;
-            font-size: 1.2rem;
-            color: #fff;
-            pointer-events: none;
+        }
+        .plot-stage {
+            flex: 1 1 65%;
+            min-width: 400px;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(16px);
             border-radius: var(--radius);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow), 0 0 25px rgba(77, 166, 255, 0.15);
+            overflow: hidden;
         }
-        .computing-overlay.active {
-            display: flex;
-        }
-        .spinner {
-            width: 36px;
-            height: 36px;
-            border: 3px solid rgba(255, 255, 255, 0.25);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin-right: 12px;
-        }
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* Panel */
+        #plot3d { width: 100%; height: 620px; }
         .panel {
             flex: 0 1 340px;
             min-width: 280px;
             background: var(--surface);
+            backdrop-filter: blur(16px);
             border: 1px solid var(--border);
             border-radius: var(--radius);
             box-shadow: var(--shadow);
-            padding: 20px 18px;
+            padding: 22px 20px;
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 16px;
             height: fit-content;
             position: sticky;
             top: 16px;
         }
         .panel h2 {
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             font-weight: 600;
-            color: var(--text);
-            margin: 0;
-            padding-bottom: 6px;
-            border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, #4da6ff, #7ad0ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
-        .param-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .param-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .param-row label {
-            width: 22px;
-            font-weight: 600;
-            font-size: 1rem;
-            color: var(--accent);
-            flex-shrink: 0;
-            text-align: center;
-        }
+        .param-row { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+        .param-row label { width: 20px; font-weight: 700; color: #8bb4ff; }
         .param-row input[type="range"] {
-            flex: 1;
-            -webkit-appearance: none;
-            appearance: none;
-            height: 6px;
-            border-radius: 3px;
-            background: var(--slider-track);
-            outline: none;
-            cursor: pointer;
+            flex: 1; height: 5px; -webkit-appearance: none; background: rgba(255,255,255,0.1); border-radius: 3px;
         }
         .param-row input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: var(--slider-fill);
-            border: 2px solid var(--surface);
-            cursor: pointer;
-            box-shadow: 0 0 8px rgba(88, 166, 255, 0.4);
+            -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+            background: #6cb4ff; box-shadow: 0 0 14px #6cb4ffaa; border: 2px solid #fff3;
         }
-        .param-row .val {
-            width: 44px;
-            text-align: right;
-            font-variant-numeric: tabular-nums;
-            font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
-            font-size: 0.85rem;
-            color: var(--text);
-            flex-shrink: 0;
-        }
-        .button-row {
-            display: flex;
-            gap: 10px;
-            margin-top: 4px;
-        }
+        .param-row .val { width: 40px; text-align: right; font-family: monospace; color: #cdd6f4; }
+        .button-group { display: flex; gap: 10px; margin-top: 6px; }
         .btn {
-            flex: 1;
-            padding: 10px 16px;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            letter-spacing: 0.01em;
+            flex: 1; padding: 11px 14px; border: none; border-radius: 30px; font-weight: 600;
+            font-size: 0.9rem; cursor: pointer; backdrop-filter: blur(8px); transition: all 0.25s;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
         }
-        .btn-start {
-            background: var(--accent);
-            color: #fff;
+        .btn-play { background: rgba(77, 166, 255, 0.2); border: 1px solid rgba(77, 166, 255, 0.45); color: #c2dbff; }
+        .btn-play:hover { background: rgba(77, 166, 255, 0.35); box-shadow: 0 0 24px rgba(77, 166, 255, 0.4); color:#fff; }
+        .btn-reset { background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.2); color:#ccc; }
+        .btn-reset:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.4); color:#fff; }
+        .colorbar-hint { display: flex; align-items: center; gap: 10px; font-size: 0.78rem; color: var(--text-secondary); }
+        .colorbar-swatch {
+            width: 100px; height: 6px; border-radius: 3px;
+            background: linear-gradient(to right, #0a1c52, #3a8fff, #5ce1e6, #e6f4ff);
         }
-        .btn-start:hover {
-            background: var(--accent-hover);
-            box-shadow: 0 0 16px rgba(88, 166, 255, 0.3);
-        }
-        .btn-reset {
-            background: var(--slider-track);
-            color: var(--text);
-            border: 1px solid var(--border);
-        }
-        .btn-reset:hover {
-            background: #2a3040;
-            border-color: #555;
-        }
-        .btn:active {
-            transform: scale(0.97);
-        }
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            pointer-events: none;
-        }
-
-        /* Info section */
-        .info-section {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 18px 20px;
-            box-shadow: var(--shadow);
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            line-height: 1.7;
-        }
-        .info-section h3 {
-            color: var(--text);
-            margin-bottom: 6px;
-            font-size: 1rem;
-        }
-        .info-section code {
-            background: #1c2333;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
-            font-size: 0.82rem;
-            color: #e0e0e0;
-        }
-        .info-section .eq-block {
-            display: block;
-            margin: 6px 0;
-            padding: 10px 14px;
-            background: #1c2333;
-            border-radius: 6px;
-            font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
-            font-size: 0.8rem;
-            overflow-x: auto;
-            white-space: pre;
-            color: #d2d2d2;
-        }
-        .colorbar-hint {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 2px;
-            font-size: 0.82rem;
-            color: var(--text-secondary);
-        }
-        .colorbar-hint .swatch {
-            display: inline-block;
-            width: 80px;
-            height: 10px;
-            border-radius: 5px;
-            background: linear-gradient(to right, #003fbf, #0096ff, #00c83c, #ffc800, #dc0000);
-            flex-shrink: 0;
-        }
-
-        /* Responsive */
         @media (max-width: 800px) {
-            .main-content {
-                flex-direction: column;
-            }
-            .panel {
-                position: static;
-                flex: 1 1 auto;
-                min-width: 100%;
-            }
-            .plot-wrapper {
-                min-width: 100%;
-            }
-            #plot3d {
-                height: 420px;
-                min-height: 350px;
-            }
+            .main-content { flex-direction: column; align-items: center; }
+            .panel { position: static; width: 100%; max-width: 500px; }
+            #plot3d { height: 450px; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>Aizawa Attractor</h1>
-            <p class="subtitle">Interactive 3D visualization · Fourth-order Runge–Kutta · 10 trajectories</p>
-        </div>
-
-        <!-- Main content: Plot + Panel -->
-        <div class="main-content">
-            <!-- 3D Plot -->
-            <div class="plot-wrapper" id="plotWrapper">
-                <div id="plot3d"></div>
-                <div class="computing-overlay" id="overlay">
-                    <div class="spinner"></div> Computing trajectories…
-                </div>
-            </div>
-
-            <!-- Parameter Panel -->
-            <div class="panel" id="panel">
-                <h2>⚙️ Parameters</h2>
-                <div class="param-group" id="paramGroup">
-                    <!-- Sliders injected by JS -->
-                </div>
-                <div class="button-row">
-                    <button class="btn btn-start" id="btnStart" title="Run simulation with current parameters">▶ Start</button>
-                    <button class="btn btn-reset" id="btnReset" title="Reset all parameters to defaults">↺ Reset</button>
-                </div>
-                <div class="colorbar-hint">
-                    <span class="swatch"></span>
-                    <span>Blue = early time &nbsp;→&nbsp; Red = late time</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Info -->
-        <div class="info-section">
-            <h3>📐 About the Aizawa Attractor</h3>
-            <p>
-                The <strong>Aizawa attractor</strong> is a classic example of a <strong>strange attractor</strong> arising
-                from a three-dimensional autonomous system of ordinary differential equations. It exhibits chaotic behaviour
-                for the parameter set shown below.
-            </p>
-            <span class="eq-block">
-                ẋ = (z − b)x − d y
-                ẏ = d x + (z − b)y
-                ż = c + a z − z³/3 − (x² + y²)(1 + e z) + f z x³
-            </span>
-            <p style="margin-top:6px;">
-                Default parameters: <code>a=0.95</code> <code>b=0.7</code> <code>c=0.6</code>
-                <code>d=3.5</code> <code>e=0.25</code> <code>f=0.1</code> ·
-                Integration: RK4, <code>dt=0.01</code>, 20&thinsp;000 steps, transient removed.
-                10 independent initial conditions near the origin all converge onto the same strange attractor.
-            </p>
-        </div>
+<div class="container">
+    <div class="header">
+        <h1>Aizawa Attractor</h1>
     </div>
 
-    <script>
-        (function() {
-            // ─────────────────────────────────────
-            // DOM elements
-            // ─────────────────────────────────────
-            const plotDiv = document.getElementById('plot3d');
-            const overlay = document.getElementById('overlay');
-            const btnStart = document.getElementById('btnStart');
-            const btnReset = document.getElementById('btnReset');
-            const paramGroup = document.getElementById('paramGroup');
-            const plotWrapper = document.getElementById('plotWrapper');
+    <div class="equation-card">
+        <span class="eq">
+            ẋ = (z − b)x − d y<br>
+            ẏ = d x + (z − b)y<br>
+            ż = c + a z − z³/3 − (x² + y²)(1 + e z) + f z x³
+        </span>
+    </div>
 
-            // ─────────────────────────────────────
-            // Default parameters
-            // ─────────────────────────────────────
-            const defaultParams = {
-                a: 0.95,
-                b: 0.7,
-                c: 0.6,
-                d: 3.5,
-                e: 0.25,
-                f: 0.1,
-            };
+    <div class="main-content">
+        <div class="plot-stage"><div id="plot3d"></div></div>
+        <div class="panel">
+            <h2>⚙️ Parameters</h2>
+            <div id="paramGroup"></div>
+            <div class="button-group">
+                <button class="btn btn-play" id="btnPlayPause">
+                    <span id="playIcon">▶</span> <span id="playText">Play</span>
+                </button>
+                <button class="btn btn-reset" id="btnReset">↺ Reset</button>
+            </div>
+            <div class="colorbar-hint">
+                <div class="colorbar-swatch"></div>
+                <span>Time →</span>
+            </div>
+        </div>
+    </div>
+</div>
 
-            // Parameter metadata: { key, label, min, max, step, default }
-            const paramDefs = [
-                { key: 'a', label: 'a', min: 0.3, max: 2.0, step: 0.01, default: 0.95 },
-                { key: 'b', label: 'b', min: 0.2, max: 1.5, step: 0.01, default: 0.7 },
-                { key: 'c', label: 'c', min: 0.1, max: 1.5, step: 0.01, default: 0.6 },
-                { key: 'd', label: 'd', min: 1.5, max: 6.0, step: 0.01, default: 3.5 },
-                { key: 'e', label: 'e', min: 0.05, max: 0.8, step: 0.01, default: 0.25 },
-                { key: 'f', label: 'f', min: 0.0, max: 0.5, step: 0.005, default: 0.1 },
+<script>
+    (function() {
+        const plotDiv = document.getElementById('plot3d');
+        const btnPlayPause = document.getElementById('btnPlayPause');
+        const playIcon = document.getElementById('playIcon');
+        const playText = document.getElementById('playText');
+        const btnReset = document.getElementById('btnReset');
+        const paramGroup = document.getElementById('paramGroup');
+
+        const defaultParams = { a: 0.95, b: 0.7, c: 0.6, d: 3.5, e: 0.25, f: 0.1 };
+        let currentParams = { ...defaultParams };
+
+        const paramDefs = [
+            { key: 'a', label: 'a', min: 0.3, max: 2.0, step: 0.01, default: 0.95 },
+            { key: 'b', label: 'b', min: 0.2, max: 1.5, step: 0.01, default: 0.7 },
+            { key: 'c', label: 'c', min: 0.1, max: 1.5, step: 0.01, default: 0.6 },
+            { key: 'd', label: 'd', min: 1.5, max: 6.0, step: 0.01, default: 3.5 },
+            { key: 'e', label: 'e', min: 0.05, max: 0.8, step: 0.01, default: 0.25 },
+            { key: 'f', label: 'f', min: 0.0, max: 0.5, step: 0.005, default: 0.1 },
+        ];
+
+        function buildSliders() {
+            paramGroup.innerHTML = '';
+            paramDefs.forEach(def => {
+                const row = document.createElement('div'); row.className = 'param-row';
+                const lbl = document.createElement('label'); lbl.textContent = def.label;
+                const slider = document.createElement('input'); slider.type = 'range';
+                slider.min = def.min; slider.max = def.max; slider.step = def.step;
+                slider.value = currentParams[def.key]; slider.dataset.key = def.key;
+                const val = document.createElement('span'); val.className = 'val';
+                val.textContent = currentParams[def.key].toFixed(def.step < 0.01 ? 3 : 2);
+                slider.addEventListener('input', () => {
+                    currentParams[def.key] = parseFloat(slider.value);
+                    val.textContent = parseFloat(slider.value).toFixed(def.step < 0.01 ? 3 : 2);
+                });
+                row.appendChild(lbl); row.appendChild(slider); row.appendChild(val);
+                paramGroup.appendChild(row);
+            });
+        }
+
+        function syncSliders() {
+            document.querySelectorAll('#paramGroup input[type="range"]').forEach(s => {
+                if (currentParams[s.dataset.key] !== undefined) s.value = currentParams[s.dataset.key];
+                const valSpan = s.parentElement?.querySelector('.val');
+                if (valSpan) {
+                    const def = paramDefs.find(d => d.key === s.dataset.key);
+                    valSpan.textContent = currentParams[s.dataset.key].toFixed(def ? (def.step < 0.01 ? 3 : 2) : 2);
+                }
+            });
+        }
+
+        function deriv(x, y, z, p) {
+            const { a, b, c, d, e, f } = p;
+            return [
+                (z - b) * x - d * y,
+                d * x + (z - b) * y,
+                c + a * z - z*z*z/3 - (x*x + y*y)*(1 + e*z) + f*z*x*x*x
             ];
+        }
 
-            // Current parameters (mutable)
-            let currentParams = { ...defaultParams };
+        function rk4(x, y, z, dt, p) {
+            const [k1x, k1y, k1z] = deriv(x, y, z, p);
+            const x2 = x + 0.5*dt*k1x, y2 = y + 0.5*dt*k1y, z2 = z + 0.5*dt*k1z;
+            const [k2x, k2y, k2z] = deriv(x2, y2, z2, p);
+            const x3 = x + 0.5*dt*k2x, y3 = y + 0.5*dt*k2y, z3 = z + 0.5*dt*k2z;
+            const [k3x, k3y, k3z] = deriv(x3, y3, z3, p);
+            const x4 = x + dt*k3x, y4 = y + dt*k3y, z4 = z + dt*k3z;
+            const [k4x, k4y, k4z] = deriv(x4, y4, z4, p);
+            return [
+                x + dt/6*(k1x + 2*k2x + 2*k3x + k4x),
+                y + dt/6*(k1y + 2*k2y + 2*k3y + k4y),
+                z + dt/6*(k1z + 2*k2z + 2*k3z + k4z)
+            ];
+        }
 
-            // ─────────────────────────────────────
-            // Build parameter sliders
-            // ─────────────────────────────────────
-            function buildSliders() {
-                paramGroup.innerHTML = '';
-                paramDefs.forEach(def => {
-                    const row = document.createElement('div');
-                    row.className = 'param-row';
-
-                    const label = document.createElement('label');
-                    label.textContent = def.label;
-                    label.title = `Parameter ${def.label}`;
-
-                    const slider = document.createElement('input');
-                    slider.type = 'range';
-                    slider.min = def.min;
-                    slider.max = def.max;
-                    slider.step = def.step;
-                    slider.value = currentParams[def.key];
-                    slider.dataset.key = def.key;
-
-                    const valSpan = document.createElement('span');
-                    valSpan.className = 'val';
-                    valSpan.textContent = formatVal(currentParams[def.key], def.step);
-
-                    slider.addEventListener('input', () => {
-                        const v = parseFloat(slider.value);
-                        currentParams[def.key] = v;
-                        valSpan.textContent = formatVal(v, def.step);
-                    });
-
-                    row.appendChild(label);
-                    row.appendChild(slider);
-                    row.appendChild(valSpan);
-                    paramGroup.appendChild(row);
-                });
-            }
-
-            function formatVal(v, step) {
-                if (step >= 0.01) return v.toFixed(2);
-                if (step >= 0.001) return v.toFixed(3);
-                return v.toFixed(4);
-            }
-
-            function syncSlidersToParams() {
-                const sliders = paramGroup.querySelectorAll('input[type="range"]');
-                sliders.forEach(slider => {
-                    const key = slider.dataset.key;
-                    if (key && currentParams[key] !== undefined) {
-                        slider.value = currentParams[key];
-                        const valSpan = slider.parentElement.querySelector('.val');
-                        if (valSpan) {
-                            const def = paramDefs.find(d => d.key === key);
-                            valSpan.textContent = formatVal(currentParams[key], def ? def.step : 0.01);
-                        }
-                    }
-                });
-            }
-
-            // ─────────────────────────────────────
-            // Aizawa system derivative
-            // ─────────────────────────────────────
-            function aizawaDerivative(x, y, z, p) {
-                const { a, b, c, d, e, f } = p;
-                const dx = (z - b) * x - d * y;
-                const dy = d * x + (z - b) * y;
-                const dz = c + a * z - (z * z * z) / 3.0 - (x * x + y * y) * (1.0 + e * z) + f * z * x * x * x;
-                return [dx, dy, dz];
-            }
-
-            // ─────────────────────────────────────
-            // Single RK4 step
-            // ─────────────────────────────────────
-            function rk4Step(x, y, z, dt, p) {
-                const [k1x, k1y, k1z] = aizawaDerivative(x, y, z, p);
-
-                const x2 = x + 0.5 * dt * k1x;
-                const y2 = y + 0.5 * dt * k1y;
-                const z2 = z + 0.5 * dt * k1z;
-                const [k2x, k2y, k2z] = aizawaDerivative(x2, y2, z2, p);
-
-                const x3 = x + 0.5 * dt * k2x;
-                const y3 = y + 0.5 * dt * k2y;
-                const z3 = z + 0.5 * dt * k2z;
-                const [k3x, k3y, k3z] = aizawaDerivative(x3, y3, z3, p);
-
-                const x4 = x + dt * k3x;
-                const y4 = y + dt * k3y;
-                const z4 = z + dt * k3z;
-                const [k4x, k4y, k4z] = aizawaDerivative(x4, y4, z4, p);
-
-                const nx = x + (dt / 6.0) * (k1x + 2.0 * k2x + 2.0 * k3x + k4x);
-                const ny = y + (dt / 6.0) * (k1y + 2.0 * k2y + 2.0 * k3y + k4y);
-                const nz = z + (dt / 6.0) * (k1z + 2.0 * k2z + 2.0 * k3z + k4z);
-
-                return [nx, ny, nz];
-            }
-
-            // ─────────────────────────────────────
-            // Generate 10 diverse initial conditions
-            // ─────────────────────────────────────
-            function generateInitialConditions() {
-                // Use deterministic pseudo-random based on fixed seed for reproducibility
-                function seededRandom(seed) {
-                    let s = seed;
-                    return function() {
-                        s = (s * 1664525 + 1013904223) & 0xffffffff;
-                        return (s >>> 0) / 0xffffffff;
-                    };
-                }
-                const rng = seededRandom(42);
-                const conditions = [];
-                const base = [0.1, 0.0, 0.0];
-                for (let i = 0; i < 10; i++) {
-                    // Spread initial conditions in a small sphere around the base point
-                    const theta = rng() * 2.0 * Math.PI;
-                    const phi = Math.acos(2.0 * rng() - 1.0);
-                    const radius = 0.02 + rng() * 0.12;
-                    const x = base[0] + radius * Math.sin(phi) * Math.cos(theta);
-                    const y = base[1] + radius * Math.sin(phi) * Math.sin(theta);
-                    const z = base[2] + radius * Math.cos(phi);
-                    conditions.push([x, y, z]);
-                }
-                return conditions;
-            }
-
-            // ─────────────────────────────────────
-            // Integrate trajectories
-            // ─────────────────────────────────────
-            function integrateTrajectories(params, dt, totalSteps, transientSteps, decimation) {
-                const initialConditions = generateInitialConditions();
-                const trajectories = [];
-                const maxVal = 1e8; // divergence threshold
-
-                for (let icIdx = 0; icIdx < initialConditions.length; icIdx++) {
-                    let [x, y, z] = initialConditions[icIdx];
-                    const traj = { x: [], y: [], z: [], tNorm: [] };
-                    let storedCount = 0;
-                    const storeStart = transientSteps;
-                    const storeEnd = totalSteps;
-
-                    for (let step = 0; step < totalSteps; step++) {
-                        // Check for blow-up
-                        if (Math.abs(x) > maxVal || Math.abs(y) > maxVal || Math.abs(z) > maxVal) {
-                            console.warn(
-                                `Trajectory ${icIdx + 1} diverged at step ${step}. Truncating.`
-                                );
-                            break;
-                        }
-                        if (isNaN(x) || isNaN(y) || isNaN(z)) {
-                            console.warn(
-                                `Trajectory ${icIdx + 1} produced NaN at step ${step}. Truncating.`
-                                );
-                            break;
-                        }
-
-                        // Store after transient, respecting decimation
-                        if (step >= storeStart && (step - storeStart) % decimation === 0) {
-                            traj.x.push(x);
-                            traj.y.push(y);
-                            traj.z.push(z);
-                            // Normalized time within the stored portion
-                            const tNorm = (step - storeStart) / (storeEnd - storeStart - 1);
-                            traj.tNorm.push(Math.max(0, Math.min(1, tNorm)));
-                            storedCount++;
-                        }
-
-                        // RK4 step
-                        [x, y, z] = rk4Step(x, y, z, dt, params);
-                    }
-
-                    if (traj.x.length > 0) {
-                        trajectories.push(traj);
-                    }
-                }
-                return trajectories;
-            }
-
-            // ─────────────────────────────────────
-            // Build Plotly traces from trajectories
-            // ─────────────────────────────────────
-            function buildPlotlyTraces(trajectories) {
-                const colorscale = [
-                    [0.0, 'rgb(0,40,180)'],
-                    [0.2, 'rgb(0,140,255)'],
-                    [0.4, 'rgb(0,200,80)'],
-                    [0.6, 'rgb(180,220,0)'],
-                    [0.8, 'rgb(255,160,0)'],
-                    [1.0, 'rgb(220,20,0)'],
+        function generateICs() {
+            const base = [0.1, 0, 0];
+            return Array.from({length: 10}, (_, i) => {
+                const angle = i * 2.399, r = 0.03 + i*0.012;
+                const theta = angle * Math.PI;
+                const phi = Math.acos(1 - 2*(i/9.5));
+                return [
+                    base[0] + r * Math.sin(phi) * Math.cos(theta),
+                    base[1] + r * Math.sin(phi) * Math.sin(theta),
+                    base[2] + r * Math.cos(phi)
                 ];
+            });
+        }
 
-                const traces = [];
-                for (let i = 0; i < trajectories.length; i++) {
-                    const traj = trajectories[i];
-                    const showScale = (i === 0); // only first trace shows colorbar
-                    traces.push({
-                        type: 'scatter3d',
-                        mode: 'markers',
-                        x: traj.x,
-                        y: traj.y,
-                        z: traj.z,
-                        marker: {
-                            size: 1.8,
-                            color: traj.tNorm,
-                            colorscale: colorscale,
-                            cmin: 0,
-                            cmax: 1,
-                            showscale: showScale,
-                            colorbar: showScale ? {
-                                title: 'Time (norm.)',
-                                titleside: 'right',
-                                titlefont: { size: 11, color: '#c9d1d9' },
-                                tickfont: { size: 10, color: '#8b949e' },
-                                len: 0.55,
-                                thickness: 14,
-                                x: 1.02,
-                                y: 0.5,
-                                bgcolor: 'rgba(22,27,34,0.9)',
-                                bordercolor: '#30363d',
-                                borderwidth: 1,
-                            } : null,
-                            opacity: 0.85,
-                        },
-                        name: `Trajectory ${i + 1}`,
-                        showlegend: false,
-                        hoverinfo: 'none',
+        // Calm gradient: deep blue → cyan → ice
+        function calmGradient(t) {
+            const colors = [
+                [10, 28, 82],      // deep navy
+                [58, 143, 255],     // bright sky blue
+                [92, 225, 230],     // cyan
+                [230, 244, 255]     // icy pale blue
+            ];
+            const idx = t * (colors.length - 1);
+            const low = Math.floor(idx);
+            const high = Math.min(low + 1, colors.length - 1);
+            const frac = idx - low;
+            const c1 = colors[low], c2 = colors[high];
+            const r = Math.round(c1[0] + (c2[0] - c1[0]) * frac);
+            const g = Math.round(c1[1] + (c2[1] - c1[1]) * frac);
+            const b = Math.round(c1[2] + (c2[2] - c1[2]) * frac);
+            return `rgb(${r},${g},${b})`;
+        }
+
+        function prepareTrajectories(params) {
+            const dt = 0.01, steps = 20000, transient = 3000, keepEvery = 4;
+            const ics = generateICs();
+            const trajectories = [];
+            for (const ic of ics) {
+                let [x, y, z] = ic;
+                const xs = [], ys = [], zs = [];
+                for (let s = 0; s < steps; s++) {
+                    [x, y, z] = rk4(x, y, z, dt, params);
+                    if (s >= transient && (s - transient) % keepEvery === 0) {
+                        xs.push(x); ys.push(y); zs.push(z);
+                    }
+                }
+                trajectories.push({ xs, ys, zs });
+            }
+            const segmentsPerTraj = 15;  // fewer segments → cleaner look
+            const segments = [];
+            let globalIdx = 0;
+            for (const traj of trajectories) {
+                const total = traj.xs.length;
+                const segSize = Math.floor(total / segmentsPerTraj);
+                for (let i = 0; i < segmentsPerTraj; i++) {
+                    const start = i * segSize;
+                    const end = (i === segmentsPerTraj - 1) ? total : (i + 1) * segSize;
+                    const t = i / (segmentsPerTraj - 1);
+                    const opacity = 0.3 + 0.7 * t;
+                    segments.push({
+                        xs: traj.xs.slice(start, end),
+                        ys: traj.ys.slice(start, end),
+                        zs: traj.zs.slice(start, end),
+                        color: calmGradient(t),
+                        opacity: opacity,
+                        globalStart: globalIdx + start,
                     });
                 }
-                return traces;
+                globalIdx += total;
             }
+            return { segments, totalPoints: globalIdx };
+        }
 
-            // ─────────────────────────────────────
-            // Plotly layout
-            // ─────────────────────────────────────
-            function buildLayout() {
-                return {
-                    title: {
-                        text: 'Aizawa Attractor · 10 trajectories · RK4 integrator',
-                        font: { size: 15, color: '#c9d1d9', family: 'Segoe UI, Inter, sans-serif' },
-                        x: 0.02,
-                    },
-                    scene: {
-                        xaxis: {
-                            title: { text: 'x', font: { color: '#8b949e' } },
-                            gridcolor: '#21262d',
-                            zerolinecolor: '#30363d',
-                            backgroundcolor: 'rgba(0,0,0,0)',
-                        },
-                        yaxis: {
-                            title: { text: 'y', font: { color: '#8b949e' } },
-                            gridcolor: '#21262d',
-                            zerolinecolor: '#30363d',
-                            backgroundcolor: 'rgba(0,0,0,0)',
-                        },
-                        zaxis: {
-                            title: { text: 'z', font: { color: '#8b949e' } },
-                            gridcolor: '#21262d',
-                            zerolinecolor: '#30363d',
-                            backgroundcolor: 'rgba(0,0,0,0)',
-                        },
-                        bgcolor: '#0d1117',
-                        camera: {
-                            eye: { x: 1.6, y: 1.3, z: 1.8 },
-                            center: { x: 0, y: 0, z: 0.15 },
-                            up: { x: 0, y: 0, z: 1 },
-                        },
-                    },
-                    paper_bgcolor: '#161b22',
-                    plot_bgcolor: '#161b22',
-                    margin: { l: 10, r: 30, t: 50, b: 10 },
-                    autosize: true,
-                    dragmode: 'orbit',
-                };
-            }
+        let allSegments = [];
+        let totalPoints = 0;
+        let visiblePoints = 0;
+        let animInterval = null;
+        let isPlaying = false;
+        const FRAME_STEP = 140;
 
-            // ─────────────────────────────────────
-            // Configuration for plot resizing
-            // ─────────────────────────────────────
-            const plotConfig = {
-                responsive: true,
-                displayModeBar: true,
-                modeBarButtonsToRemove: [
-                    'sendDataToCloud',
-                    'autoScale2d',
-                    'hoverClosestCartesian',
-                    'hoverCompareCartesian',
-                    'toggleSpikelines',
-                ],
-                displaylogo: false,
-                toImageButtonOptions: {
-                    format: 'png',
-                    filename: 'aizawa_attractor',
-                    height: 900,
-                    width: 1400,
+        function createEmptyPlot() {
+            const traces = allSegments.map(seg => ({
+                type: 'scatter3d',
+                mode: 'lines',
+                x: [],
+                y: [],
+                z: [],
+                line: { color: seg.color, width: 2.5 },
+                opacity: seg.opacity,
+                hoverinfo: 'none',
+                showlegend: false,
+            }));
+            const layout = {
+                scene: {
+                    xaxis: { gridcolor: '#1e2535', zerolinecolor: '#2a3040', backgroundcolor: 'rgba(0,0,0,0)' },
+                    yaxis: { gridcolor: '#1e2535', zerolinecolor: '#2a3040', backgroundcolor: 'rgba(0,0,0,0)' },
+                    zaxis: { gridcolor: '#1e2535', zerolinecolor: '#2a3040', backgroundcolor: 'rgba(0,0,0,0)' },
+                    bgcolor: '#080c14',
+                    camera: { eye: { x: 1.7, y: 1.3, z: 1.7 }, center: { x:0, y:0, z:0.1 } }
                 },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                margin: { l:0, r:0, t:0, b:0 },
+                autosize: true,
             };
+            Plotly.react(plotDiv, traces, layout, { responsive: true, displayModeBar: true, modeBarButtonsToRemove: ['sendDataToCloud'] });
+        }
 
-            // ─────────────────────────────────────
-            // Main simulation & plot function
-            // ─────────────────────────────────────
-            function runSimulation() {
-                // Show overlay
-                overlay.classList.add('active');
-                btnStart.disabled = true;
-                btnReset.disabled = true;
-
-                // Use setTimeout to let the overlay render before heavy computation
-                setTimeout(() => {
-                    try {
-                        const dt = 0.01;
-                        const totalSteps = 20000;
-                        const transientSteps = 3000;
-                        const decimation = 4; // store every 4th step after transient
-
-                        const trajectories = integrateTrajectories(
-                            currentParams,
-                            dt,
-                            totalSteps,
-                            transientSteps,
-                            decimation
-                        );
-
-                        if (trajectories.length === 0) {
-                            alert(
-                                'All trajectories diverged. Try adjusting parameters closer to the defaults.'
-                                );
-                            overlay.classList.remove('active');
-                            btnStart.disabled = false;
-                            btnReset.disabled = false;
-                            return;
-                        }
-
-                        const traces = buildPlotlyTraces(trajectories);
-                        const layout = buildLayout();
-
-                        const totalPoints = trajectories.reduce((sum, t) => sum + t.x.length, 0);
-                        console.log(
-                            `Plotted ${trajectories.length} trajectories · ${totalPoints.toLocaleString()} total points`
-                        );
-
-                        Plotly.react(plotDiv, traces, layout, plotConfig).then(() => {
-                            overlay.classList.remove('active');
-                            btnStart.disabled = false;
-                            btnReset.disabled = false;
-                        }).catch((err) => {
-                            console.error('Plotly error:', err);
-                            overlay.classList.remove('active');
-                            btnStart.disabled = false;
-                            btnReset.disabled = false;
-                        });
-                    } catch (err) {
-                        console.error('Simulation error:', err);
-                        alert('An error occurred during simulation. Check the console for details.');
-                        overlay.classList.remove('active');
-                        btnStart.disabled = false;
-                        btnReset.disabled = false;
-                    }
-                }, 60); // small delay for overlay paint
-            }
-
-            // ─────────────────────────────────────
-            // Initial plot (empty / placeholder)
-            // ─────────────────────────────────────
-            function showPlaceholder() {
-                const layout = buildLayout();
-                layout.title.text = 'Aizawa Attractor · Click <b>Start</b> to simulate';
-                Plotly.react(plotDiv, [], layout, plotConfig);
-            }
-
-            // ─────────────────────────────────────
-            // Resize handler
-            // ─────────────────────────────────────
-            function handleResize() {
-                Plotly.Plots.resize(plotDiv);
-            }
-
-            // ─────────────────────────────────────
-            // Event listeners
-            // ─────────────────────────────────────
-            btnStart.addEventListener('click', () => {
-                // Read current params from sliders
-                const sliders = paramGroup.querySelectorAll('input[type="range"]');
-                sliders.forEach(slider => {
-                    const key = slider.dataset.key;
-                    if (key && currentParams[key] !== undefined) {
-                        currentParams[key] = parseFloat(slider.value);
-                    }
-                });
-                runSimulation();
-            });
-
-            btnReset.addEventListener('click', () => {
-                currentParams = { ...defaultParams };
-                syncSlidersToParams();
-                runSimulation();
-            });
-
-            window.addEventListener('resize', debounce(handleResize, 200));
-
-            function debounce(fn, delay) {
-                let timer;
-                return function(...args) {
-                    clearTimeout(timer);
-                    timer = setTimeout(() => fn.apply(this, args), delay);
+        function updateTraces(visibleCount) {
+            const maxVisible = Math.min(visibleCount, totalPoints);
+            const updates = allSegments.map(seg => {
+                const start = seg.globalStart;
+                const len = seg.xs.length;
+                if (start >= maxVisible) return { x: [], y: [], z: [] };
+                if (start + len <= maxVisible) return { x: seg.xs, y: seg.ys, z: seg.zs };
+                const take = maxVisible - start;
+                return {
+                    x: seg.xs.slice(0, take),
+                    y: seg.ys.slice(0, take),
+                    z: seg.zs.slice(0, take),
                 };
+            });
+            const indices = updates.map((_, i) => i);
+            Plotly.update(plotDiv, {
+                x: updates.map(u => u.x),
+                y: updates.map(u => u.y),
+                z: updates.map(u => u.z),
+            }, {}, indices);
+        }
+
+        function startAnimation() {
+            if (isPlaying) return;
+            isPlaying = true;
+            updatePlayButton();
+
+            function step() {
+                if (!isPlaying) return;
+                if (visiblePoints >= totalPoints) {
+                    clearInterval(animInterval);
+                    animInterval = null;
+                    setTimeout(() => {
+                        if (isPlaying) {
+                            visiblePoints = 0;
+                            updateTraces(0);
+                            animInterval = setInterval(step, 40);
+                        }
+                    }, 700);
+                    return;
+                }
+                visiblePoints = Math.min(visiblePoints + FRAME_STEP, totalPoints);
+                updateTraces(visiblePoints);
             }
 
-            // ─────────────────────────────────────
-            // Initialize
-            // ─────────────────────────────────────
-            function init() {
-                buildSliders();
-                syncSlidersToParams();
-                showPlaceholder();
-                // Auto-run on load
-                setTimeout(() => runSimulation(), 400);
-            }
+            step();
+            animInterval = setInterval(step, 40);
+        }
 
-            init();
-        })();
-    </script>
+        function stopAnimation() {
+            isPlaying = false;
+            if (animInterval) { clearInterval(animInterval); animInterval = null; }
+            updatePlayButton();
+        }
+
+        function updatePlayButton() {
+            playIcon.textContent = isPlaying ? '⏸' : '▶';
+            playText.textContent = isPlaying ? 'Pause' : 'Play';
+        }
+
+        function rebuildAndPlay() {
+            stopAnimation();
+            const { segments, totalPoints: tp } = prepareTrajectories(currentParams);
+            allSegments = segments;
+            totalPoints = tp;
+            visiblePoints = 0;
+            createEmptyPlot();
+            startAnimation();
+        }
+
+        btnPlayPause.addEventListener('click', () => {
+            if (isPlaying) {
+                stopAnimation();
+            } else {
+                rebuildAndPlay();
+            }
+        });
+
+        btnReset.addEventListener('click', () => {
+            stopAnimation();
+            currentParams = { ...defaultParams };
+            syncSliders();
+            allSegments = [];
+            totalPoints = 0;
+            visiblePoints = 0;
+            Plotly.react(plotDiv, [], { scene: { bgcolor: '#080c14' }, paper_bgcolor: 'rgba(0,0,0,0)' }, { responsive: true });
+            updatePlayButton();
+        });
+
+        window.addEventListener('resize', () => Plotly.Plots.resize(plotDiv));
+
+        buildSliders();
+        syncSliders();
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const { segments, totalPoints: tp } = prepareTrajectories(currentParams);
+                allSegments = segments;
+                totalPoints = tp;
+                visiblePoints = 0;
+                createEmptyPlot();
+                startAnimation();
+            }, 400);
+        });
+    })();
+</script>
 </body>
 </html>
