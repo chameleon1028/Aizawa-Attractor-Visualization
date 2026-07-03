@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aizawa Attractor · Blue‑Cyan Gradient</title>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <style>
+        :root {
+            --bg: #0a0c10;
+            --surface: rgba(20, 24, 32, 0.85);
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #e0e0e0;
+            --radius: 14px;
+            --shadow: 0 20px 50px rgba(0,0,0,0.7);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            background: radial-gradient(ellipse at 30% 40%, #131a2b, #04060a);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+        }
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .header {
+            text-align: center;
+            padding: 8px 0;
+        }
+        .header h1 {
+            font-size: clamp(1.8rem, 3vw, 2.4rem);
+            font-weight: 700;
+            background: linear-gradient(135deg, #4da6ff, #7ad0ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+        .equation-card {
+            background: rgba(15, 20, 30, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(77, 166, 255, 0.35);
+            border-radius: var(--radius);
+            padding: 20px 28px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(77, 166, 255, 0.15);
+            text-align: center;
+        }
+        .equation-card .eq {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            line-height: 1.9;
+            color: #d0d9e8;
+            background: #101624;
+            padding: 16px 24px;
+            border-radius: 10px;
+            border-left: 4px solid #4da6ff;
+            display: inline-block;
+            text-align: left;
+        }
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            align-items: stretch;
+            justify-content: center;
+        }
+        .plot-stage {
+            flex: 1 1 65%;
+            min-width: 400px;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(16px);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow), 0 0 25px rgba(77, 166, 255, 0.15);
+            overflow: hidden;
+        }
+        #plot3d { width: 100%; height: 620px; }
+        .panel {
+            flex: 0 1 340px;
+            min-width: 280px;
+            background: var(--surface);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 22px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            height: fit-content;
+            position: sticky;
+            top: 16px;
+        }
+        .panel h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #4da6ff, #7ad0ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .param-row { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+        .param-row label { width: 20px; font-weight: 700; color: #8bb4ff; }
+        .param-row input[type="range"] {
+            flex: 1; height: 5px; -webkit-appearance: none; background: rgba(255,255,255,0.1); border-radius: 3px;
+        }
+        .param-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+            background: #6cb4ff; box-shadow: 0 0 14px #6cb4ffaa; border: 2px solid #fff3;
+        }
+        .param-row .val { width: 40px; text-align: right; font-family: monospace; color: #cdd6f4; }
+        .button-group { display: flex; gap: 10px; margin-top: 6px; }
+        .btn {
+            flex: 1; padding: 11px 14px; border: none; border-radius: 30px; font-weight: 600;
+            font-size: 0.9rem; cursor: pointer; backdrop-filter: blur(8px); transition: all 0.25s;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn-play { background: rgba(77, 166, 255, 0.2); border: 1px solid rgba(77, 166, 255, 0.45); color: #c2dbff; }
+        .btn-play:hover { background: rgba(77, 166, 255, 0.35); box-shadow: 0 0 24px rgba(77, 166, 255, 0.4); color:#fff; }
+        .btn-reset { background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.2); color:#ccc; }
+        .btn-reset:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.4); color:#fff; }
+        .colorbar-hint { display: flex; align-items: center; gap: 10px; font-size: 0.78rem; color: var(--text-secondary); }
+        .colorbar-swatch {
+            width: 100px; height: 6px; border-radius: 3px;
+            background: linear-gradient(to right, #0a1c52, #3a8fff, #5ce1e6, #e6f4ff);
+        }
+        @media (max-width: 800px) {
+            .main-content { flex-direction: column; align-items: center; }
+            .panel { position: static; width: 100%; max-width: 500px; }
+            #plot3d { height: 450px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Aizawa Attractor</h1>
+    </div>
+
+    <div class="equation-card">
+        <span class="eq">
+            ẋ = (z − b)x − d y<br>
+            ẏ = d x + (z − b)y<br>
+            ż = c + a z − z³/3 − (x² + y²)(1 + e z) + f z x³
+        </span>
+    </div>
+
+    <div class="main-content">
+        <div class="plot-stage"><div id="plot3d"></div></div>
+        <div class="panel">
+            <h2>⚙️ Parameters</h2>
+            <div id="paramGroup"></div>
+            <div class="button-group">
+                <button class="btn btn-play" id="btnPlayPause">
+                    <span id="playIcon">▶</span> <span id="playText">Play</span>
+                </button>
+                <button class="btn btn-reset" id="btnReset">↺ Reset</button>
+            </div>
+            <div class="colorbar-hint">
+                <div class="colorbar-swatch"></div>
+                <span>Time revolution →</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const plotDiv = document.getElementById('plot3d');
+        const btnPlayPause = document.getElementById('btnPlayPause');
+        const playIcon = document.getElementById('playIcon');
+        const playText = document.getElementById('playText');
+        const btnReset = document.getElementById('btnReset');
+        const paramGroup = document.getElementById('paramGroup');
+
+        const defaultParams = { a: 0.95, b: 0.7, c: 0.6, d: 3.5, e: 0.25, f: 0.1 };
+        let currentParams = { ...defaultParams };
+
+        const paramDefs = [
+            { key: 'a', label: 'a', min: 0.3, max: 2.0, step: 0.01, default: 0.95 },
+            { key: 'b', label: 'b', min: 0.2, max: 1.5, step: 0.01, default: 0.7 },
+            { key: 'c', label: 'c', min: 0.1, max: 1.5, step: 0.01, default: 0.6 },
+            { key: 'd', label: 'd', min: 1.5, max: 6.0, step: 0.01, default: 3.5 },
+            { key: 'e', label: 'e', min: 0.05, max: 0.8, step: 0.01, default: 0.25 },
+            { key: 'f', label: 'f', min: 0.0, max: 0.5, step: 0.005, default: 0.1 },
+        ];
+
+        function buildSliders() {
+            paramGroup.innerHTML = '';
+            paramDefs.forEach(def => {
+                const row = document.createElement('div'); row.className = 'param-row';
+                const lbl = document.createElement('label'); lbl.textContent = def.label;
+                const slider = document.createElement('input'); slider.type = 'range';
+                slider.min = def.min; slider.max = def.max; slider.step = def.step;
+                slider.value = currentParams[def.key]; slider.dataset.key = def.key;
+                const val = document.createElement('span'); val.className = 'val';
+                val.textContent = currentParams[def.key].toFixed(def.step < 0.01 ? 3 : 2);
+                slider.addEventListener('input', () => {
+                    currentParams[def.key] = parseFloat(slider.value);
+                    val.textContent = parseFloat(slider.value).toFixed(def.step < 0.01 ? 3 : 2);
+                });
+                row.appendChild(lbl); row.appendChild(slider); row.appendChild(val);
+                paramGroup.appendChild(row);
+            });
+        }
+
+        function syncSliders() {
+            document.querySelectorAll('#paramGroup input[type="range"]').forEach(s => {
+                if (currentParams[s.dataset.key] !== undefined) s.value = currentParams[s.dataset.key];
+                const valSpan = s.parentElement?.querySelector('.val');
+                if (valSpan) {
+                    const def = paramDefs.find(d => d.key === s.dataset.key);
+                    valSpan.textContent = currentParams[s.dataset.key].toFixed(def ? (def.step < 0.01 ? 3 : 2) : 2);
+                }
+            });
+        }
+
+        function deriv(x, y, z, p) {
+            const { a, b, c, d, e, f } = p;
+            return [
+                (z - b) * x - d * y,
+                d * x + (z - b) * y,
+                c + a * z - z*z*z/3 - (x*x + y*y)*(1 + e*z) + f*z*x*x*x
+            ];
+        }
+
+        function rk4(x, y, z, dt, p) {
+            const [k1x, k1y, k1z] = deriv(x, y, z, p);
+            const x2 = x + 0.5*dt*k1x, y2 = y + 0.5*dt*k1y, z2 = z + 0.5*dt*k1z;
+            const [k2x, k2y, k2z] = deriv(x2, y2, z2, p);
+            const x3 = x + 0.5*dt*k2x, y3 = y + 0.5*dt*k2y, z3 = z + 0.5*dt*k2z;
+            const [k3x, k3y, k3z] = deriv(x3, y3, z3, p);
+            const x4 = x + dt*k3x, y4 = y + dt*k3y, z4 = z + dt*k3z;
+            const [k4x, k4y, k4z] = deriv(x4, y4, z4, p);
+            return [
+                x + dt/6*(k1x + 2*k2x + 2*k3x + k4x),
+                y + dt/6*(k1y + 2*k2y + 2*k3y + k4y),
+                z + dt/6*(k1z + 2*k2z + 2*k3z + k4z)
+            ];
+        }
+
+        function generateICs() {
+            const base = [0.1, 0, 0];
+            return Array.from({length: 10}, (_, i) => {
+                const angle = i * 2.399, r = 0.03 + i*0.012;
+                const theta = angle * Math.PI;
+                const phi = Math.acos(1 - 2*(i/9.5));
+                return [
+                    base[0] + r * Math.sin(phi) * Math.cos(theta),
+                    base[1] + r * Math.sin(phi) * Math.sin(theta),
+                    base[2] + r * Math.cos(phi)
+                ];
+            });
+        }
+
+        // Calm gradient: deep blue → cyan → ice
+        function calmGradient(t) {
+            const colors = [
+                [10, 28, 82],
+                [58, 143, 255],
+                [92, 225, 230],
+                [230, 244, 255]
+            ];
+            const idx = t * (colors.length - 1);
+            const low = Math.floor(idx);
+            const high = Math.min(low + 1, colors.length - 1);
+            const frac = idx - low;
+            const c1 = colors[low], c2 = colors[high];
+            const r = Math.round(c1[0] + (c2[0] - c1[0]) * frac);
+            const g = Math.round(c1[1] + (c2[1] - c1[1]) * frac);
+            const b = Math.round(c1[2] + (c2[2] - c1[2]) * frac);
+            return `rgb(${r},${g},${b})`;
+        }
+
+        function prepareTrajectories(params) {
+            const dt = 0.01, steps = 20000, transient = 3000, keepEvery = 4;
+            const ics = generateICs();
+            const trajectories = [];
+            for (const ic of ics) {
+                let [x, y, z] = ic;
+                const xs = [], ys = [], zs = [];
+                for (let s = 0; s < steps; s++) {
+                    [x, y, z] = rk4(x, y, z, dt, params);
+                    if (s >= transient && (s - transient) % keepEvery === 0) {
+                        xs.push(x); ys.push(y); zs.push(z);
+                    }
+                }
+                trajectories.push({ xs, ys, zs });
+            }
+            const segmentsPerTraj = 15;
+            const segments = [];
+            let globalIdx = 0;
+            for (const traj of trajectories) {
+                const total = traj.xs.length;
+                const segSize = Math.floor(total / segmentsPerTraj);
+                for (let i = 0; i < segmentsPerTraj; i++) {
+                    const start = i * segSize;
+                    const end = (i === segmentsPerTraj - 1) ? total : (i + 1) * segSize;
+                    const t = i / (segmentsPerTraj - 1);
+                    const opacity = 0.3 + 0.7 * t;
+                    segments.push({
+                        xs: traj.xs.slice(start, end),
+                        ys: traj.ys.slice(start, end),
+                        zs: traj.zs.slice(start, end),
+                        color: calmGradient(t),
+                        opacity: opacity,
+                        globalStart: globalIdx + start,
+                    });
+                }
+                globalIdx += total;
+            }
+            return { segments, totalPoints: globalIdx };
+        }
+
+        let allSegments = [];
+        let totalPoints = 0;
+        let visiblePoints = 0;
+        let animInterval = null;
+        let isPlaying = false;
+        const FRAME_STEP = 140;
+
+        function createEmptyPlot() {
+            const traces = allSegments.map(seg => ({
+                type: 'scatter3d',
+                mode: 'lines',
+                x: [],
+                y: [],
+                z: [],
+                line: { color: seg.color, width: 2.5 },
+                opacity: seg.opacity,
+                hoverinfo: 'none',
+                showlegend: false,
+            }));
+            const layout = {
+                scene: {
+                    xaxis: { gridcolor: '#1e2535', zerolinecolor: '#2a3040', backgroundcolor: 'rgba(0,0,0,0)' },
+                    yaxis: { gridcolor: '#1e2535', zerolinecolor: '#2a3040', backgroundcolor: 'rgba(0,0,0,0)' },
+                    zaxis: { gridcolor: '#1e2535', zerolinecolor: '#2a3040', backgroundcolor: 'rgba(0,0,0,0)' },
+                    bgcolor: '#080c14',
+                    camera: { eye: { x: 1.7, y: 1.3, z: 1.7 }, center: { x:0, y:0, z:0.1 } }
+                },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                margin: { l:0, r:0, t:0, b:0 },
+                autosize: true,
+            };
+            Plotly.react(plotDiv, traces, layout, { responsive: true, displayModeBar: true, modeBarButtonsToRemove: ['sendDataToCloud'] });
+        }
+
+        function updateTraces(visibleCount) {
+            const maxVisible = Math.min(visibleCount, totalPoints);
+            const updates = allSegments.map(seg => {
+                const start = seg.globalStart;
+                const len = seg.xs.length;
+                if (start >= maxVisible) return { x: [], y: [], z: [] };
+                if (start + len <= maxVisible) return { x: seg.xs, y: seg.ys, z: seg.zs };
+                const take = maxVisible - start;
+                return {
+                    x: seg.xs.slice(0, take),
+                    y: seg.ys.slice(0, take),
+                    z: seg.zs.slice(0, take),
+                };
+            });
+            const indices = updates.map((_, i) => i);
+            Plotly.update(plotDiv, {
+                x: updates.map(u => u.x),
+                y: updates.map(u => u.y),
+                z: updates.map(u => u.z),
+            }, {}, indices);
+        }
+
+        function startAnimation() {
+            if (isPlaying) return;
+            isPlaying = true;
+            updatePlayButton();
+
+            function step() {
+                if (!isPlaying) return;
+                if (visiblePoints >= totalPoints) {
+                    clearInterval(animInterval);
+                    animInterval = null;
+                    setTimeout(() => {
+                        if (isPlaying) {
+                            visiblePoints = 0;
+                            updateTraces(0);
+                            animInterval = setInterval(step, 40);
+                        }
+                    }, 700);
+                    return;
+                }
+                visiblePoints = Math.min(visiblePoints + FRAME_STEP, totalPoints);
+                updateTraces(visiblePoints);
+            }
+
+            step();
+            animInterval = setInterval(step, 40);
+        }
+
+        function stopAnimation() {
+            isPlaying = false;
+            if (animInterval) { clearInterval(animInterval); animInterval = null; }
+            updatePlayButton();
+        }
+
+        function updatePlayButton() {
+            playIcon.textContent = isPlaying ? '⏸' : '▶';
+            playText.textContent = isPlaying ? 'Pause' : 'Play';
+        }
+
+        function rebuildAndPlay() {
+            stopAnimation();
+            const { segments, totalPoints: tp } = prepareTrajectories(currentParams);
+            allSegments = segments;
+            totalPoints = tp;
+            visiblePoints = 0;
+            createEmptyPlot();
+            startAnimation();
+        }
+
+        btnPlayPause.addEventListener('click', () => {
+            if (isPlaying) {
+                stopAnimation();
+            } else {
+                rebuildAndPlay();
+            }
+        });
+
+        btnReset.addEventListener('click', () => {
+            stopAnimation();
+            currentParams = { ...defaultParams };
+            syncSliders();
+            allSegments = [];
+            totalPoints = 0;
+            visiblePoints = 0;
+            Plotly.react(plotDiv, [], { scene: { bgcolor: '#080c14' }, paper_bgcolor: 'rgba(0,0,0,0)' }, { responsive: true });
+            updatePlayButton();
+        });
+
+        window.addEventListener('resize', () => Plotly.Plots.resize(plotDiv));
+
+        buildSliders();
+        syncSliders();
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const { segments, totalPoints: tp } = prepareTrajectories(currentParams);
+                allSegments = segments;
+                totalPoints = tp;
+                visiblePoints = 0;
+                createEmptyPlot();
+                startAnimation();
+            }, 400);
+        });
+    })();
+</script>
+</body>
+</html>
